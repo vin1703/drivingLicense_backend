@@ -1,0 +1,8 @@
+{
+    "env": {
+        "DB_USER" : "vin",
+        "DB_PASSWORD":"HdkjyH6d9EX7m1vd",
+        "DB_NAME":"license_manager",
+        "TOKEN_KEY":"supersecretkey"
+    }
+}
