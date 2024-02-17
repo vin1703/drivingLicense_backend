@@ -2,6 +2,7 @@ const HttpError = require('../models/http-error');
 const user = require("../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const cloudinary = require('../utils/cloudinary');
 
 const signup = async(req,res,next)=>{
     const {name,email,password,address,number} = req.body;
@@ -58,36 +59,66 @@ const login = async(req,res,next)=>{
     res.status(200).json({User:findUser,token:token});
 }
 
+// const updateId = async (req, res, next) => {
+//     const userId = req.params.uid;
+//     const upload = await cloudinary.uploader.upload(req.file.path)
+//     // Extract the paths of uploaded images
+//     const imagePaths = req.files.map(file => file.path);
+
+//     let foundUser;
+//     try {
+//         foundUser = await user.findById(userId);
+//         if (!foundUser) {
+//             throw new HttpError('User not found', 404);
+//         }
+//     } catch (err) {
+//         const error = new HttpError('Something went wrong', 500);
+//         return next(error);
+//     }
+
+//     // Update the user document with the new image paths
+//     foundUser.photoURL = imagePaths[0] || foundUser.photoURL;
+//     foundUser.aadharURL = imagePaths[1] || foundUser.aadharURL;
+//     foundUser.panURL = imagePaths[2] || foundUser.panURL;
+
+//     try {
+//         await foundUser.save();
+//     } catch (err) {
+//         const error = new HttpError('Something went wrong', 500);
+//         return next(error);
+//     }
+
+//     res.status(200).json({ user: foundUser.toObject() });
+// };
+
 const updateId = async (req, res, next) => {
     const userId = req.params.uid;
 
-    // Extract the paths of uploaded images
-    const imagePaths = req.files.map(file => file.path);
-
-    let foundUser;
+    // Use Promise.all to upload all images asynchronously
     try {
-        foundUser = await user.findById(userId);
+        const uploadPromises = req.files.map(file => cloudinary.uploader.upload(file.path));
+        const results = await Promise.all(uploadPromises);
+
+        // Extract the secure URLs of the uploaded images
+        const imageUrls = results.map(result => result.secure_url);
+
+        let foundUser = await user.findById(userId);
         if (!foundUser) {
             throw new HttpError('User not found', 404);
         }
-    } catch (err) {
-        const error = new HttpError('Something went wrong', 500);
-        return next(error);
-    }
 
-    // Update the user document with the new image paths
-    foundUser.photoURL = imagePaths[0] || foundUser.photoURL;
-    foundUser.aadharURL = imagePaths[1] || foundUser.aadharURL;
-    foundUser.panURL = imagePaths[2] || foundUser.panURL;
+        // Update the user document with the image URLs
+        foundUser.photoURL = imageUrls[0] || foundUser.photoURL;
+        foundUser.aadharURL = imageUrls[1] || foundUser.aadharURL;
+        foundUser.panURL = imageUrls[2] || foundUser.panURL;
 
-    try {
         await foundUser.save();
+
+        res.status(200).json({ user: foundUser.toObject() });
     } catch (err) {
         const error = new HttpError('Something went wrong', 500);
         return next(error);
     }
-
-    res.status(200).json({ user: foundUser.toObject() });
 };
 
 const updateName = async (req, res, next) => {
