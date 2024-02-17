@@ -29,7 +29,7 @@ const cors = require('cors');
 
 app.use(bodyParser.json());
 
-app.use('/uploads/images',express.static(path.join('uploads','images')));
+// app.use('/uploads/images',express.static(path.join('uploads','images')));
 
 app.use(cors());
 

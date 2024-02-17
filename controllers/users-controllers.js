@@ -91,17 +91,59 @@ const login = async(req,res,next)=>{
 //     res.status(200).json({ user: foundUser.toObject() });
 // };
 
+// const updateId = async (req, res, next) => {
+//     const userId = req.params.uid;
+
+//     // Use Promise.all to upload all images asynchronously
+//     try {
+//         const uploadPromises = req.files.map(file => cloudinary.uploader.upload(file.path));
+//         const results = await Promise.all(uploadPromises);
+
+//         // Extract the secure URLs of the uploaded images
+//         const imageUrls = results.map(result => result.secure_url);
+
+//         let foundUser = await user.findById(userId);
+//         if (!foundUser) {
+//             throw new HttpError('User not found', 404);
+//         }
+
+//         // Update the user document with the image URLs
+//         foundUser.photoURL = imageUrls[0] || foundUser.photoURL;
+//         foundUser.aadharURL = imageUrls[1] || foundUser.aadharURL;
+//         foundUser.panURL = imageUrls[2] || foundUser.panURL;
+
+//         await foundUser.save();
+
+//         res.status(200).json({ user: foundUser.toObject() });
+//     } catch (err) {
+//         const error = new HttpError('Something went wrong', 500);
+//         return next(error);
+//     }
+// };
+
 const updateId = async (req, res, next) => {
     const userId = req.params.uid;
 
-    // Use Promise.all to upload all images asynchronously
     try {
-        const uploadPromises = req.files.map(file => cloudinary.uploader.upload(file.path));
-        const results = await Promise.all(uploadPromises);
+        if (!req.files || req.files.length !== 3) {
+            throw new Error('Please provide 3 image files');
+        }
 
-        // Extract the secure URLs of the uploaded images
-        const imageUrls = results.map(result => result.secure_url);
+        // Upload all images to Cloudinary asynchronously
+        const uploadPromises = req.files.map(file => new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream({ resource_type: 'auto' }, (error, result) => {
+                if (error) {
+                    reject(new Error('Failed to upload image to Cloudinary'));
+                } else {
+                    resolve(result.secure_url);
+                }
+            }).end(file.buffer);
+        }));
 
+        // Wait for all uploads to complete
+        const imageUrls = await Promise.all(uploadPromises);
+
+        // Find the user by ID
         let foundUser = await user.findById(userId);
         if (!foundUser) {
             throw new HttpError('User not found', 404);
@@ -112,14 +154,21 @@ const updateId = async (req, res, next) => {
         foundUser.aadharURL = imageUrls[1] || foundUser.aadharURL;
         foundUser.panURL = imageUrls[2] || foundUser.panURL;
 
+        // Save the updated user document
         await foundUser.save();
 
+        // Respond with the updated user object
         res.status(200).json({ user: foundUser.toObject() });
     } catch (err) {
+        // Handle errors
+        console.error('Error updating user:', err);
         const error = new HttpError('Something went wrong', 500);
         return next(error);
     }
 };
+
+
+
 
 const updateName = async (req, res, next) => {
     const { name } = req.body;
