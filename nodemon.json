@@ -3,6 +3,9 @@
         "DB_USER" : "vin",
         "DB_PASSWORD":"HdkjyH6d9EX7m1vd",
         "DB_NAME":"license_manager",
-        "TOKEN_KEY":"supersecretkey"
+        "TOKEN_KEY":"supersecretkey",
+        "CLOUD_NAME":"dxhyjkbgx",
+        "CLOUD_API_KEY":"524182662221737",
+        "CLOUD_API_SECRET":"5tj8Tj7WxLA999P86b0oC2J1TbQ"
     }
 }
